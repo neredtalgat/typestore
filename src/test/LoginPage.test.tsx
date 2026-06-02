@@ -1,13 +1,17 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
 import { configureStore } from '@reduxjs/toolkit'
 import LoginPage from '../pages/LoginPage'
 import authReducer from '../store/authSlice'
+import { todoAPI } from '../services/todoService'
 
 const renderLoginPage = () => {
-  const store = configureStore({ reducer: { auth: authReducer } })
+  const store = configureStore({
+    reducer: { auth: authReducer, [todoAPI.reducerPath]: todoAPI.reducer },
+    middleware: (getDefault) => getDefault().concat(todoAPI.middleware),
+  })
 
   render(
     <Provider store={store}>
@@ -60,16 +64,18 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Пароль минимум 6 символов')).toBeInTheDocument()
   })
 
-  it('диспатчит setCredentials и редиректит при верных данных', async () => {
+  it('сохраняет пользователя в store при верных данных', async () => {
     const user = userEvent.setup()
     const { store } = renderLoginPage()
 
-    await user.type(screen.getByPlaceholderText('Email'), 'test@test.com')
-    await user.type(screen.getByPlaceholderText('Пароль'), 'password123')
+    await user.type(screen.getByPlaceholderText('Email'), 'admin@test.com')
+    await user.type(screen.getByPlaceholderText('Пароль'), 'admin123')
     await user.click(screen.getByRole('button', { name: 'Войти' }))
 
-    const state = store.getState().auth
-    expect(state.user?.token).toBe('fake-jwt-token')
-    expect(state.user?.email).toBe('test@test.com')
+    await waitFor(() => {
+      const state = store.getState().auth
+      expect(state.user?.email).toBe('admin@test.com')
+      expect(state.user?.token).toBeTruthy()
+    })
   })
 })

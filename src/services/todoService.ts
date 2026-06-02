@@ -1,12 +1,22 @@
-// services/todoService.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { ITodo } from '../types/todo'
 import type { RootState } from '../store/store'
 
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface LoginResponse {
+  id: number
+  email: string
+  token: string
+}
+
 export const todoAPI = createApi({
   reducerPath: 'todoAPI',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL,
+    baseUrl: import.meta.env.VITE_API_URL ?? '/api',
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.user?.token
       if (token) headers.set('authorization', `Bearer ${token}`)
@@ -15,14 +25,20 @@ export const todoAPI = createApi({
   }),
   tagTypes: ['Todo'],
   endpoints: (build) => ({
-    fetchAllTodos: build.query<ITodo[], number>({
-      query: (limit = 10) => ({
-        url: '/todos',
-        params: { _limit: limit },
+    login: build.mutation<LoginResponse, LoginRequest>({
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
       }),
+    }),
+
+    fetchAllTodos: build.query<ITodo[], void>({
+      query: () => '/todos',
       providesTags: ['Todo'],
     }),
-    createTodo: build.mutation<ITodo, Partial<ITodo>>({
+
+    createTodo: build.mutation<ITodo, { title: string }>({
       query: (todo) => ({
         url: '/todos',
         method: 'POST',
@@ -30,18 +46,20 @@ export const todoAPI = createApi({
       }),
       invalidatesTags: ['Todo'],
     }),
+
     updateTodo: build.mutation<ITodo, ITodo>({
       query: (todo) => ({
         url: `/todos/${todo.id}`,
-        method: `PUT`,
+        method: 'PUT',
         body: todo,
       }),
       invalidatesTags: ['Todo'],
     }),
+
     deleteTodo: build.mutation<void, number>({
       query: (id) => ({
         url: `/todos/${id}`,
-        method: `DELETE`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Todo'],
     }),
@@ -49,6 +67,7 @@ export const todoAPI = createApi({
 })
 
 export const {
+  useLoginMutation,
   useFetchAllTodosQuery,
   useCreateTodoMutation,
   useDeleteTodoMutation,

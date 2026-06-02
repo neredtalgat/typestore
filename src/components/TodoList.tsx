@@ -11,7 +11,7 @@ const TodoList = () => {
   const [title, setTitle] = useState('')
   const [mutationError, setMutationError] = useState<string | null>(null)
 
-  const { data: todos, isLoading, isError, refetch } = useFetchAllTodosQuery(10)
+  const { data: todos, isLoading, isError, refetch } = useFetchAllTodosQuery()
   const [createTodo] = useCreateTodoMutation()
   const [updateTodo] = useUpdateTodoMutation()
   const [deleteTodo] = useDeleteTodoMutation()
@@ -19,7 +19,7 @@ const TodoList = () => {
   const handleCreate = async () => {
   if (!title.trim()) return
   try {
-    await createTodo({ title, completed: false, userId: 1 }).unwrap()
+    await createTodo({ title }).unwrap()
     setTitle('')
     setMutationError(null)
   } catch {
