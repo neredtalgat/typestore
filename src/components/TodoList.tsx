@@ -1,20 +1,83 @@
-// components/TodoList.tsx
-import { useFetchAllTodosQuery } from '../services/todoService'
+import { useState } from 'react'
+import { useFetchAllTodosQuery, useCreateTodoMutation, useUpdateTodoMutation, useDeleteTodoMutation } from '../services/todoService'
+import { ITodo } from '../types/todo'
 
 const TodoList = () => {
-  const { data: todos, isLoading, isError } = useFetchAllTodosQuery(10)
+  const [title, setTitle] = useState('')
 
-  if (isLoading) return <div>Загрузка...</div>
-  if (isError) return <div>Ошибка!</div>
+  const { data: todos, isLoading, isError } = useFetchAllTodosQuery(10)
+  const [createTodo] = useCreateTodoMutation()
+  const [updateTodo] = useUpdateTodoMutation()
+  const [deleteTodo] = useDeleteTodoMutation()
+
+  const handleCreate = () => {
+    if (!title.trim()) return
+    createTodo({ title, completed: false, userId: 1 })
+    setTitle('')
+  }
+
+  const handleToggle = (todo: ITodo) => {
+    updateTodo({ ...todo, completed: !todo.completed })
+  }
+
+  const handleDelete = (id: number) => {
+    deleteTodo(id)
+  }
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+      Загрузка задач...
+    </div>
+  )
+
+  if (isError) return (
+    <div className="flex items-center justify-center h-40 text-red-400 text-sm">
+      Не удалось загрузить задачи
+    </div>
+  )
 
   return (
-    <ul>
-      {todos?.map(todo => (
-        <li key={todo.id}>
-          {todo.completed ? '✓' : '○'} {todo.title}
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+          placeholder="Новая задача..."
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition"
+        />
+        <button
+          onClick={handleCreate}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 rounded-xl transition"
+        >
+          Добавить
+        </button>
+      </div>
+
+      <ul className="flex flex-col gap-2">
+        {todos?.map(todo => (
+          <li
+            key={todo.id}
+            className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 transition group"
+          >
+            <span
+              onClick={() => handleToggle(todo)}
+              className={`text-sm cursor-pointer select-none ${
+                todo.completed ? 'line-through text-gray-400' : 'text-gray-700'
+              }`}
+            >
+              {todo.title}
+            </span>
+            <button
+              onClick={() => handleDelete(todo.id)}
+              className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition ml-4 shrink-0"
+            >
+              Удалить
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

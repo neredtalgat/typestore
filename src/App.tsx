@@ -1,12 +1,23 @@
-import TodoList from "./components/TodoList";
+import { Routes, Route } from 'react-router-dom'
+import TodosPage from './pages/TodosPage'
+import NotFoundPage from './pages/NotFoundPage'
+import PrivateRoute from './components/PrivateRoute'
+import LoginPage from './pages/LoginPage'
 
-function App(){
-    return (
-    <div>
-        <h1>Todo App</h1>
+function App() {
+  return (
+    <Routes>
+      <Route path = "/login" element={<LoginPage/>}/>
 
-        <TodoList/>
 
-    </div>
-    )
+      <Route path="/" element={
+        <PrivateRoute>
+          <TodosPage />
+        </PrivateRoute>
+        } />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  )
 }
+
+export default App
