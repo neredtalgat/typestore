@@ -1,40 +1,70 @@
 import { useState } from 'react'
-import { useFetchAllTodosQuery, useCreateTodoMutation, useUpdateTodoMutation, useDeleteTodoMutation } from '../services/todoService'
+import {
+  useFetchAllTodosQuery,
+  useCreateTodoMutation,
+  useUpdateTodoMutation,
+  useDeleteTodoMutation,
+} from '../services/todoService'
 import { ITodo } from '../types/todo'
 
 const TodoList = () => {
   const [title, setTitle] = useState('')
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
-  const { data: todos, isLoading, isError } = useFetchAllTodosQuery(10)
+  const { data: todos, isLoading, isError, refetch } = useFetchAllTodosQuery(10)
   const [createTodo] = useCreateTodoMutation()
   const [updateTodo] = useUpdateTodoMutation()
   const [deleteTodo] = useDeleteTodoMutation()
 
-  const handleCreate = () => {
-    if (!title.trim()) return
-    createTodo({ title, completed: false, userId: 1 })
+  const handleCreate = async () => {
+  if (!title.trim()) return
+  try {
+    await createTodo({ title, completed: false, userId: 1 }).unwrap()
     setTitle('')
+    setMutationError(null)
+  } catch {
+    setMutationError('Не удалось создать задачу')
   }
+}
 
-  const handleToggle = (todo: ITodo) => {
-    updateTodo({ ...todo, completed: !todo.completed })
+const handleToggle = async (todo: ITodo) => {
+  try {
+    await updateTodo({ ...todo, completed: !todo.completed }).unwrap()
+    setMutationError(null)
+  } catch {
+    setMutationError('Не удалось обновить задачу')
   }
+}
 
-  const handleDelete = (id: number) => {
-    deleteTodo(id)
+const handleDelete = async (id: number) => {
+  try {
+    await deleteTodo(id).unwrap()
+    setMutationError(null)
+  } catch {
+    setMutationError('Не удалось удалить задачу')
   }
+}
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
-      Загрузка задач...
-    </div>
-  )
 
-  if (isError) return (
-    <div className="flex items-center justify-center h-40 text-red-400 text-sm">
-      Не удалось загрузить задачи
-    </div>
-  )
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+        Загрузка задач...
+      </div>
+    )
+
+  if (isError)
+    return (
+      <div className="flex flex-col items-center justify-center h-40 gap-3">
+        <p className="text-red-400 text-sm">Не удалось загрузить задачи</p>
+        <button
+          onClick={refetch}
+          className="text-sm text-blue-600 hover:text-blue-800 underline transition"
+        >
+          Попробовать снова
+        </button>
+      </div>
+    )
 
   return (
     <div className="flex flex-col gap-4">
@@ -54,8 +84,12 @@ const TodoList = () => {
         </button>
       </div>
 
+      {mutationError && (
+        <p className="text-red-400 text-sm text-center">{mutationError}</p>
+      )}
+
       <ul className="flex flex-col gap-2">
-        {todos?.map(todo => (
+        {todos?.map((todo) => (
           <li
             key={todo.id}
             className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 transition group"
